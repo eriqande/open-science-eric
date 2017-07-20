@@ -1,22 +1,16 @@
 ---
 title: "Plotting SST with ggplot"
-output: 
-  html_document:
-    keep_md: true
+author: Eric C. Anderson
+date: "2014-12-24"
+slug: test-post
+categories: []
+tags: []
+output:
+  default:
+    toc: true
 ---
 
 
-```{r, include = FALSE}
-library(knitr)
-opts_chunk$set(fig.width=6,
-               fig.height=6,
-               out.width = "600px",
-               out.height = "420px",
-               fig.path = "../assets/plotting-sst-with-ggplot-",
-               warning = FALSE,
-               error =  FALSE,
-               message = FALSE)
-```
 
 Roy M and I were curious about how one might go about efficiently and quickly
 plotting big rasters like sea surface temperature data using `ggplot` with nice
@@ -62,18 +56,21 @@ output list, as I will want to use that later.
 # This is based on code that Roy sent me for getting SST.
 # I modified it to get data from around Catalina Island
 my_get_sst_catalina <- function(year) {
+  
+  year <- as.character(year)
   # base url with YEAR meant to be replaced
   turl <- "http://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd8day.nc?sst[(YEAR-12-12T00:00:00Z)][(0.0)][(30.0):(35.0)][(238.0):(243.2)]"
   
   # the URL with YEAR replaced with a value
   the_url <- str_replace(turl, "YEAR", year)
   
-  # the filename to save the downloaded data in
-  the_file <- paste("sst_", year, ".nc", sep="")
+  # the filename to save the downloaded data in.  I put this in a cache folder
+  # a few directory levels above...
+  the_file <- paste("../../file_caches_etc/sst_", year, ".nc", sep = "")
   
   # if the file isn't here, download it
-  if(!file.exists(the_file)) {
-    download.file(the_url, the_file, mode='wb')
+  if (!file.exists(the_file)) {
+    download.file(the_url, the_file, mode = "wb")
   } else {
     message(paste("Using existing file", the_file, collapse = " "))
   }
@@ -91,6 +88,7 @@ my_get_sst_catalina <- function(year) {
   
   ret
 }
+getwd()
 ```
 
 Here is an example of how to use that function, and a summary of the output.
@@ -129,7 +127,7 @@ head(msst)
 Now that we have a long format data frame, we can plot the contents of it
 with `geom_raster` in ggplot.  (Note that most people think of raster data as
 being in a matrix format, but, like all things ggplot, `geom_raster` still requires
-the data to be in long format).
+the data to be in long format). 
 
 Here is a simple plot:
 ```{r super-vanilla-sst}
@@ -174,7 +172,7 @@ polygons in another layer.  We give it a gray fill and a black coastline.
 ```{r basic-plot-with-shore}
 basic_plot <- ggplot(data = msst, aes(x = long, y = lat, fill = degF)) + 
   geom_raster(interpolate = TRUE) +
-  geom_polygon(data = shore, aes(x=long, y = lat, group = group), color = "black", fill = "grey80") +
+  geom_polygon(data = shore, aes(x = long, y = lat, group = group), color = "black", fill = "grey80") +
   scale_fill_gradientn(colours = rev(rainbow(7)), na.value = NA) +
   theme_bw() +
   coord_fixed(1.3)
@@ -206,7 +204,7 @@ Now, we can plot it like before, but `facet_wrap` on date:
 ```{r sst-facets, fig.height=11, fig.width=8, out.height="1150px", out.width="750px"}
 ggplot(data = allyears, aes(x = long, y = lat, fill = degF)) + 
   geom_raster(interpolate = TRUE) +
-  geom_polygon(data = shore, aes(x=long, y = lat, group = group), color = "black", fill = "grey80") +
+  geom_polygon(data = shore, aes(x = long, y = lat, group = group), color = "black", fill = "grey80") +
   scale_fill_gradientn(colours = rev(rainbow(7)), na.value = NA) +
   theme_bw() +
   coord_fixed(1.3) + 

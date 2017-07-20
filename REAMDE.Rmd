@@ -1,0 +1,27 @@
+---
+title: "Eric C. Anderson's website"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  github_document:
+    toc: true
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE, message=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "readme-figs/"
+)
+library(tidyverse)
+```
+
+
+I am using the Academic Hugo theme.  One thing that I found super disappointing was 
+lack of support for keeping one's publications in bibtex. 
+
+I wrote an R function to convert my bibtex list of things to a tidy data
+frame of stuff that I can then convert to the format required of Hugo Academic.
+
+This is in:

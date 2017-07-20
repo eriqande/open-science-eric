@@ -2,3 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
+
+file_caches_etc/*
