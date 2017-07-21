@@ -1,0 +1,108 @@
+---
+title: "Solving ODEs in R"
+author: Eric C. Anderson
+date: "2015-01-22"
+slug: solving-odes-in-r
+categories: []
+tags: []
+output:
+  default:
+    toc: true
+---
+
+
+
+<p>Marc Mangel is offering a course in Quantitative Fisheries at NMFS’ Southwest Fisheries Science Center (where I work). Having spent the fall delivering a <a href="http://eriqande.github.io/rep-res-web/">course about using R</a> to my NMFS colleagues, I thought it would be fun to sit in on Marc’s class. What a great opportunity! I just think it is the coolest thing that Marc is part of our community, and is willing to provide this enjoyable and useful education for us!</p>
+<p>Most of my forays into statistical methodology and the mathematics behind them have involved discrete math—I work on topics in genetics that can mostly be condensed down to thinking about drawing balls out of urns. So, I am not terribly familiar with the sorts of dynamical systems that we will be developing in Marc’s class. To make things worse, a rather depressing fraction of any mathematical agility I might have acquired as a graduate student seems to have departed! No really! When I look back at the derivations in my Master’s thesis I think to myself, “Holy Cow! Did I really know how to do that?”</p>
+<p>On the other hand, I feel like I actually have gotten better at computer implementation since my graduate years. Hence, my plan for the exercises for this course are to have a good time implementing them in R (since I’ve been enjoying that language immensely over the last couple of years) and plotting lots of pictures of the results and intermediate steps in the hopes that this will help develop some intuition about these problems (and maybe even reach some of the dusty corners of my mind.) And I figured I would put this up on my blog in case other people in the class wanted to see one way to go about solving the first exercise for the course using R.</p>
+<p>It has been a long time since I have solved any differential equations, but there is apparently a package called <code>deSolve</code> for R that looks like it should make it relatively painless.</p>
+<div id="setup" class="section level2">
+<h2>Setup</h2>
+<p>A good reference is the <a href="http://cran.r-project.org/web/packages/deSolve/vignettes/deSolve.pdf">deSolve vignette</a> I strongly recommend giving that a quick read through.</p>
+<div id="installing-desolve" class="section level3">
+<h3>Installing deSolve</h3>
+<p>Installing <code>deSolve</code> is straightforward:</p>
+<pre class="r"><code>if(!(&quot;deSolve&quot; %in% rownames(installed.packages()))) {
+  install.packages(&quot;deSolve&quot;)
+}</code></pre>
+</div>
+</div>
+<div id="exercise-1" class="section level2">
+<h2>Exercise 1</h2>
+<p>Assume a logistically growing population has carrying capacity \(K = 10000\), \(r = 0.3\) and has been depleted to level \(N(1) = 150\). To investigate the recovery strategy, let \(C_{max}(N)\) be the maximum catch that can be taken from the population to sustain it at current level \(N\) and define recovery time to be the first time that population size crosses 6,000.</p>
+<p>Compute the recovery time if your harvest strategy is to close the fishery entirely until recovery occurs (i.e. harvest is 0) or harvest is \(0.1 C_{max}(N(t))\), \(0.2 C_{max}(N(t))\), \(\ldots\), \(0.9 C_{max}(N(t))\).</p>
+<p>Make a plot of recovery time vs. the fraction of the sustaining catch your strategy allows and think about the social and institutional consequences of these results.</p>
+<div id="solution" class="section level3">
+<h3>Solution</h3>
+<p>All of this could be done analytically, but I want to play around with <code>deSolve</code> so let’s just be silly about it and pretend we don’t know the solution to the logistic.</p>
+<p>Well, it seems that \(C_{max}(N(t))\) must be whatever value will leave \(\frac{dN}{dt} = 0\), so it is just going to be \(rN(1-N/K)\). Therefore we can easily compute a <code>Logistic</code> function that has a parameter <code>fract.of.max</code>, which we will call <code>fom</code> for short:</p>
+<pre class="r"><code>library(deSolve)
+parameters &lt;- c(r = 0.3, K = 10000, fom = 0)
+state &lt;- c(N = 150)
+Logistic &lt;- function(t, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    # rate of change 
+    dN &lt;- (1 - fom) * (r * N * (1 - N / K))
+    
+    # return the result
+    list(dN)
+  }) # end with(as.list ...
+}
+
+times &lt;- seq(0, 300, by = 0.2)</code></pre>
+<p>Now we can run that over a range of values of fom:</p>
+<pre class="r"><code>fracts &lt;- seq(0, 0.9, by = 0.1)
+names(fracts) &lt;- paste(&quot;frac =&quot;, fracts)
+
+list_results &lt;- lapply(fracts, function(x) {
+  parameters[&quot;fom&quot;] &lt;- x
+  ode(y = state, times = times, func = Logistic, parms = parameters)
+})</code></pre>
+<p>Now we can make a long format data frame out of those and then plot with ggplot</p>
+<pre class="r"><code># make a long data frame of it
+ldf &lt;- do.call(rbind, lapply(names(list_results), function(x) data.frame(list_results[[x]], x, stringsAsFactors = FALSE)))
+
+# plot with ggplot
+library(ggplot2)
+ggplot(data = ldf, aes(x = time, y = N, color = x)) + geom_line()</code></pre>
+<p><img src="/post/2015-01-22-solving-differential-equations-in-R_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>Now, to get the times when you first cross 6,000 we can use <code>dplyr</code> (just for fun):</p>
+<pre class="r"><code>library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>ldf &lt;- tbl_df(ldf)
+
+recov_times &lt;- ldf %&gt;% 
+  group_by(x) %&gt;% 
+  summarise(recov = min(time[N&gt;6000]))
+
+recov_times</code></pre>
+<pre><code>## # A tibble: 10 x 2
+##             x recov
+##         &lt;chr&gt; &lt;dbl&gt;
+##  1   frac = 0  15.4
+##  2 frac = 0.1  17.2
+##  3 frac = 0.2  19.2
+##  4 frac = 0.3  22.0
+##  5 frac = 0.4  25.6
+##  6 frac = 0.5  30.8
+##  7 frac = 0.6  38.4
+##  8 frac = 0.7  51.2
+##  9 frac = 0.8  76.6
+## 10 frac = 0.9 153.2</code></pre>
+<p>And then we can plot those against the fraction of the sustaining harvest.</p>
+<pre class="r"><code># here is some heinous sapply foo to break &quot;frac = 0.1&quot; to a numeric 0.1, etc....
+recov_times$foms &lt;- as.numeric(sapply(strsplit(recov_times$x, &quot; = &quot;), &quot;[&quot;, 2))
+
+ggplot(recov_times, aes(x = foms, y = recov, color = x)) + geom_point()</code></pre>
+<p><img src="/post/2015-01-22-solving-differential-equations-in-R_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>But it seems that what is really interesting is the total harvest over that time.</p>
+<p>Late, and running out of steam…maybe more later. At least I hope this gives a sense for how to use <code>deSolve</code>.</p>
+</div>
+</div>

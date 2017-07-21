@@ -1,0 +1,215 @@
+---
+title: "Plotting SST with ggplot"
+author: Eric C. Anderson
+date: "2014-12-24"
+slug: test-post
+categories: []
+tags: []
+output:
+  default:
+    toc: true
+---
+
+
+
+<p>Roy M and I were curious about how one might go about efficiently and quickly plotting big rasters like sea surface temperature data using <code>ggplot</code> with nice coastlines in there, etc.</p>
+<p>I had considered using <code>ggmap</code>. For reasons to do with the mercator projection of the base map in <code>ggmap</code> the word on the street is that this doesn’t work very well. I regularly crashed my whole R session trying it, too! So, instead we will focus on using the <a href="http://www.ngdc.noaa.gov/mgg/shorelines/gshhs.html">GSHHS</a> shoreline maps.</p>
+<div id="a-catalina-island-example" class="section level2">
+<h2>A Catalina Island Example</h2>
+<p>I am going to be heading out to Catalina Island for some snorkeling with the family over Xmas break. A lot of friends have told me that the water there is warmer than typical this time of year. It seems this would make a good test case. So, here is my plan:</p>
+<ol style="list-style-type: decimal">
+<li>First figure out how to plot this year’s 8-day composite SST for a large area around Catalina Island, using <code>ggplot2</code>.</li>
+<li>Then, I want to compare across, say, 9 years, using faceting in ggplot.</li>
+</ol>
+<p>Before we get going, here are the libraries that I will be using:</p>
+<pre class="r"><code>library(stringr)
+library(ncdf4)
+library(reshape2)
+library(ggplot2)
+library(mapdata)</code></pre>
+<pre><code>## Loading required package: maps</code></pre>
+<pre class="r"><code>library(maptools)</code></pre>
+<pre><code>## Loading required package: sp</code></pre>
+<pre><code>## Checking rgeos availability: TRUE</code></pre>
+<div id="getting-sst-data" class="section level3">
+<h3>Getting SST data</h3>
+<p>Roy showed me how to download the data. I am going to wrap that up in a little function that downloads data from Dec 12 in the year that I tell it to, and saves that in an intermediate file, so it doesn’t have to re-download it. Note that, since the other things we will be plotting assume that western hemisphere longitudes are negative, we subtract 360 from the SST longitudes. I also add the date to the output list, as I will want to use that later.</p>
+<pre class="r"><code># This is based on code that Roy sent me for getting SST.
+# I modified it to get data from around Catalina Island
+my_get_sst_catalina &lt;- function(year) {
+  
+  year &lt;- as.character(year)
+  # base url with YEAR meant to be replaced
+  turl &lt;- &quot;http://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd8day.nc?sst[(YEAR-12-12T00:00:00Z)][(0.0)][(30.0):(35.0)][(238.0):(243.2)]&quot;
+  
+  # the URL with YEAR replaced with a value
+  the_url &lt;- str_replace(turl, &quot;YEAR&quot;, year)
+  
+  # the filename to save the downloaded data in.  I put this in a cache folder
+  # a few directory levels above...
+  the_file &lt;- paste(&quot;../../file_caches_etc/sst_&quot;, year, &quot;.nc&quot;, sep = &quot;&quot;)
+  
+  # if the file isn&#39;t here, download it
+  if (!file.exists(the_file)) {
+    download.file(the_url, the_file, mode = &quot;wb&quot;)
+  } else {
+    message(paste(&quot;Using existing file&quot;, the_file, collapse = &quot; &quot;))
+  }
+  
+  # now, grab stuff out of the netcdf file and return it in a list
+  # called ret
+  sstFile &lt;- nc_open(the_file)
+  ret &lt;- list()
+  ret$lats &lt;- ncvar_get(sstFile, &quot;latitude&quot;)
+  ret$lon &lt;- ncvar_get(sstFile, &quot;longitude&quot;) - 360 # we need them as negative values
+  ret$time &lt;- ncvar_get(sstFile, &quot;time&quot;)
+  ret$sst &lt;- ncvar_get(sstFile, &quot;sst&quot;)
+  ret$date &lt;- paste(&quot;12-12-&quot;, year, sep = &quot;&quot;)
+  nc_close(sstFile)
+  
+  ret
+}
+getwd()</code></pre>
+<pre><code>## [1] &quot;/Users/eriq/Documents/git-repos/open-science-eric/content/post&quot;</code></pre>
+<p>Here is an example of how to use that function, and a summary of the output.</p>
+<pre class="r"><code>cata_sst_2014 &lt;- my_get_sst_catalina(2014)
+
+# look at the structure of the result
+str(cata_sst_2014)</code></pre>
+<pre><code>## List of 5
+##  $ lats: num [1:401(1d)] 30 30 30 30 30.1 ...
+##  $ lon : num [1:417(1d)] -122 -122 -122 -122 -122 ...
+##  $ time: num [1(1d)] 1.42e+09
+##  $ sst : num [1:417, 1:401] 19.8 19.9 20 20.2 20.1 ...
+##  $ date: chr &quot;12-12-2014&quot;</code></pre>
+<p>The sst component is a matrix with elements that correspond to cells of latitude and longitude. It is a raster.</p>
+</div>
+<div id="prepping-for-ggplot-and-a-simple-plot" class="section level3">
+<h3>Prepping for ggplot and a simple plot</h3>
+<p>You might recall that ggplot operates on long-format data frames. A raster in matrix format is in wide format. So, we need to convert that. We can do that pretty easily with the <code>reshape2</code> package. The trick here is to put the long’s and lat’s on as row and column names and then melt it. I will wrap this up in a function so we can use it easily later. I will also cbind the date to the result, and make a column for Fahrenheit because when most people (in the backwards, non-metric US) are thinking of swimming in cold water, they gauge temp in Fahrenheit (myself included…):</p>
+<pre class="r"><code>melt_sst &lt;- function(L) {
+  dimnames(L$sst) &lt;- list(long = L$lon, lat = L$lats)
+  ret &lt;- melt(L$sst, value.name = &quot;sst&quot;)
+  cbind(date = L$date, ret, degF = ret$sst * 9/5 + 32)
+}</code></pre>
+<p>And here is how we use that function. And a look at what it returns.</p>
+<pre class="r"><code>msst &lt;-  melt_sst(cata_sst_2014)
+head(msst)</code></pre>
+<pre><code>##         date      long lat      sst    degF
+## 1 12-12-2014 -122.0000  30 19.83000 67.6940
+## 2 12-12-2014 -121.9875  30 19.87250 67.7705
+## 3 12-12-2014 -121.9750  30 20.00250 68.0045
+## 4 12-12-2014 -121.9625  30 20.15333 68.2760
+## 5 12-12-2014 -121.9500  30 20.08167 68.1470
+## 6 12-12-2014 -121.9375  30 20.09333 68.1680</code></pre>
+<p>Now that we have a long format data frame, we can plot the contents of it with <code>geom_raster</code> in ggplot. (Note that most people think of raster data as being in a matrix format, but, like all things ggplot, <code>geom_raster</code> still requires the data to be in long format).</p>
+<p>Here is a simple plot:</p>
+<pre class="r"><code>ggplot(data = msst, aes(x = long, y = lat, fill = degF)) + 
+  geom_raster(interpolate = TRUE) +
+  scale_fill_gradientn(colours = rev(rainbow(7)), na.value = NA) +
+  theme_bw() +
+  coord_fixed(1.3)</code></pre>
+<pre><code>## Warning: Removed 36682 rows containing missing values (geom_raster).</code></pre>
+<p><img src="/post/2014-12-24-plotting-sst-with-ggplot_files/figure-html/super-vanilla-sst-1.png" width="672" /></p>
+<p>That is standard ggplot stuff. Worth mentioning though is <code>coord_fixed</code> which sets the aspect ratio to something that looks good in this part of the world, and the <code>na.value</code> argument to <code>scale_fill_gradientn</code> which ensure that missing data areas don’t get any color on them.</p>
+</div>
+<div id="adding-some-coastline" class="section level3">
+<h3>Adding some coastline</h3>
+<p>The plot above is sort of nice, but it is ugly to have the coast being the same non-color as missing data, and there is not clean edge on the coast. We will fix that.</p>
+<p>A previous post (need to link) showed how to use the <a href="http://www.ngdc.noaa.gov/mgg/shorelines/gshhs.html">GSHHS</a> shoreline maps. We use it here too.</p>
+<p>Here we get the data that we need for that. Note that if you want to do this yourself, you would need to download the maps and probably change the path to them below:</p>
+<pre class="r"><code>if (!rgeosStatus()) gpclibPermit()
+
+# path to the GSHHS maps on my computer
+gshhs.f.b &lt;- &quot;/Users/eriq/Maps/gshhg-bin-2.3.3/gshhs_f.b&quot;
+shore &lt;- getRgshhsMap(gshhs.f.b, xlim = c(-122, -116.8), ylim = c(30, 35))</code></pre>
+<pre><code>## Data are polygon data
+## Data are polygon data
+## Rgshhs: clipping 2 of 22 polygons ...</code></pre>
+<pre class="r"><code>shore &lt;- fortify(shore)</code></pre>
+<p>The <code>fortify()</code> command turns the polygons from the GSHHS maps into a long data format that ggplot can deal with. Here is what <code>shore</code> looks like now:</p>
+<pre class="r"><code>head(shore)</code></pre>
+<pre><code>##        long      lat order  hole piece id group
+## 1 -116.8000 31.97996     1 FALSE     1  2   2.1
+## 2 -116.8071 31.98008     2 FALSE     1  2   2.1
+## 3 -116.8079 31.97933     3 FALSE     1  2   2.1
+## 4 -116.8086 31.97911     4 FALSE     1  2   2.1
+## 5 -116.8113 31.97917     5 FALSE     1  2   2.1
+## 6 -116.8126 31.97836     6 FALSE     1  2   2.1</code></pre>
+<p>Now, adding that coastline in there is as simple as just laying down the polygons in another layer. We give it a gray fill and a black coastline.</p>
+<pre class="r"><code>basic_plot &lt;- ggplot(data = msst, aes(x = long, y = lat, fill = degF)) + 
+  geom_raster(interpolate = TRUE) +
+  geom_polygon(data = shore, aes(x = long, y = lat, group = group), color = &quot;black&quot;, fill = &quot;grey80&quot;) +
+  scale_fill_gradientn(colours = rev(rainbow(7)), na.value = NA) +
+  theme_bw() +
+  coord_fixed(1.3)
+
+basic_plot</code></pre>
+<pre><code>## Warning: Removed 36682 rows containing missing values (geom_raster).</code></pre>
+<p><img src="/post/2014-12-24-plotting-sst-with-ggplot_files/figure-html/basic-plot-with-shore-1.png" width="672" /></p>
+</div>
+<div id="harnessing-the-power-of-ggplot" class="section level3">
+<h3>Harnessing the power of ggplot</h3>
+<p>The above is pretty, but recall that I want to compare temperatures on Dec 12 this year, to temps in the 8 previous years. One of the lovely things about using ggplot to plot our sea surface temperatures is that we have immediate access to all of ggplot’s features like faceting.</p>
+<p>So, let’s do this. First we have to download all the data for 2006-2014 and put it all together into a single data frame. Like so:</p>
+<pre class="r"><code>years &lt;- 2006:2014
+tmp &lt;- lapply(years, function(x) melt_sst(my_get_sst_catalina(x)))
+allyears &lt;- do.call(rbind, tmp)
+
+# see what that looks like:
+head(allyears)</code></pre>
+<pre><code>##         date      long lat    sst   degF
+## 1 12-12-2006 -122.0000  30     NA     NA
+## 2 12-12-2006 -121.9875  30 17.375 63.275
+## 3 12-12-2006 -121.9750  30 17.375 63.275
+## 4 12-12-2006 -121.9625  30 17.375 63.275
+## 5 12-12-2006 -121.9500  30 17.020 62.636
+## 6 12-12-2006 -121.9375  30     NA     NA</code></pre>
+<p>Now, we can plot it like before, but <code>facet_wrap</code> on date:</p>
+<pre class="r"><code>ggplot(data = allyears, aes(x = long, y = lat, fill = degF)) + 
+  geom_raster(interpolate = TRUE) +
+  geom_polygon(data = shore, aes(x = long, y = lat, group = group), color = &quot;black&quot;, fill = &quot;grey80&quot;) +
+  scale_fill_gradientn(colours = rev(rainbow(7)), na.value = NA) +
+  theme_bw() +
+  coord_fixed(1.3) + 
+  facet_wrap(~ date, nrow = 3)</code></pre>
+<pre><code>## Warning: Removed 382666 rows containing missing values (geom_raster).</code></pre>
+<p><img src="/post/2014-12-24-plotting-sst-with-ggplot_files/figure-html/sst-facets-1.png" width="750px" height="1150px" /></p>
+<p>That takes a minute or so to plot on my old laptop—not super zippy, but it is so easy to code up and it looks pretty good! It is also clear that my buddies have it right: the water really is quite warm this year.</p>
+<p>I’m outta here! I’ve gotta pack my mask and snorkel up…</p>
+</div>
+</div>
+<div id="failures-with-ggmap" class="section level2">
+<h2>Failures with ggmap…</h2>
+<p>Now, what if we want a ggmap base to it? The following causes a complete failure. R aborts….</p>
+<pre class="r"><code>library(ggmap)
+
+bb &lt;- make_bbox(lon, lats)
+base &lt;- get_map(bb, maptype = &quot;terrain-background&quot;)
+
+
+ggmap(base) + 
+  geom_raster(data = msst, aes(x = long, y = lat, fill = value, alpha = not_missing), interpolate = TRUE) +
+  scale_fill_gradientn(colours = rev(rainbow(7))) + 
+  scale_alpha_discrete(range = c(0,1))</code></pre>
+<p>So, what if we transform the points to mercator first?</p>
+<pre class="r"><code>library(ggmap)
+library(rgdal)
+library(sp)
+
+bb &lt;- make_bbox(lon, lats)
+base &lt;- get_map(bb, maptype = &quot;terrain-background&quot;)
+
+# let&#39;s try to project it to the mercator:
+# make a SpatialPointsDataFrame of it.
+sst_spdf &lt;- SpatialPointsDataFrame(msst[,1:2], data = msst[, -(1:2)], proj4string = CRS(&quot;+proj=longlat +datum=WGS84&quot;))
+
+sst2 &lt;- spTransform(sst_spdf, CRS(&quot;+proj=merc&quot;))
+
+
+ggmap(base) + 
+  geom_raster(data = as.data.frame(sst2), aes(x = long, y = lat, fill = value, alpha = not_missing), interpolate = TRUE) +
+  scale_fill_gradientn(colours = rev(rainbow(7))) + 
+  scale_alpha_discrete(range = c(0,1))</code></pre>
+<p>Nope! That totally bombs too!</p>
+</div>

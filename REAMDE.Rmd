@@ -24,4 +24,8 @@ lack of support for keeping one's publications in bibtex.
 I wrote an R function to convert my bibtex list of things to a tidy data
 frame of stuff that I can then convert to the format required of Hugo Academic.
 
-This is in:
+
+
+## Site
+
+Experimentally I have put this at:  [http://guide-discards-53082.netlify.com](http://guide-discards-53082.netlify.com)
