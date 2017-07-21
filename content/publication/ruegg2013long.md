@@ -1,7 +1,7 @@
 +++
 abstract = "" 
 authors = ["KC Ruegg", "HC Rosenbaum", "EC Anderson", "M Engel", "A Rothschild", "CS Baker", "SR Palumbi"] 
-date = "1012-12-13" 
+date = "2012-12-13" 
 image = "" 
 image_preview = "" 
 publication = "In: _Conservation Genetics_ **14**:103--114." 
