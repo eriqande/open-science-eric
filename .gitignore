@@ -5,3 +5,4 @@
 
 file_caches_etc/*
 public/*
+content/post/*.html
