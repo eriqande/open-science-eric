@@ -1,13 +1,18 @@
-body, td {
-   font-family: sans-serif;
-   background-color: white;
-   font-size: 21px;
+html {
+  font-family: sans-serif;
+  font-size: 18px;
+  color: rgba(0,0,0,0.8);
+  line-height: 1.65;
 }
-
+@media screen and (min-width: 58em) {
+  html {
+    font-size: 18px;
+  }
+}
 
 tt, code, pre {
    font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
-   font-size: 16px;
+   font-size: 14px;
 }
 
 h1 {
@@ -32,10 +37,6 @@ h5 {
 
 h6 {
    font-size:0.8em;
-}
-
-a:visited {
-   color: rgb(50%, 0%, 50%);
 }
 
 tt, code, pre {
