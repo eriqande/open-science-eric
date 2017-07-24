@@ -13,8 +13,11 @@ weight = 1
 [interests]
   interests = [
     "Statistical genetics in natural populations",
+    "Relationship inference",
+    "Computation on graphical models",
     "Fisheries management",
-    "Bayesian computation"
+    "Bioinformatics",
+    "Reproducible research"
   ]
 
 # List your qualifications (such as academic degrees).
@@ -38,8 +41,23 @@ weight = 1
 # Biography
 
 Eric C. Anderson is a statistical geneticist focused on the application of molecular technologies to 
-fisheries management and ecological research.  I have worked extensively in the application of single 
-nucleotide polymorphism (SNP) markers to Pacific salmon fishery management and research.  Recently I have been involved in the development of novel next-generation sequencing approaches for conservation
-genetics.  
+ecological research and fisheries management.  He has worked extensively in the application of single 
+nucleotide polymorphism (SNP) markers to Pacific salmon fishery management and research.  Recently,
+with his colleagues in the Molecular Ecology and Genetic Analysis (MEGA) team at the Southwest Fisheries
+Science Center, he 
+has been promoting the development of novel, next-generation sequencing methods for conservation
+genetics, implementing bioinformatic and statistical approaches to make the methods 
+broadly applicable.  He 
+also contributes to the [Bird Genoscape Project](http://www.birdgenoscape.org/), which his wife co-directs,
+and collaborates widely with molecular ecologists, conservation geneticists, and fishery biologists.
+
+Eric is an active proponent of reproducible research and open science.  You can find
+that many of his ongoing research projects are developed in the open, publicly, on GitHub.
+He has also taught courses (in [2014](http://eriqande.github.io/rep-res-web/) and 
+[2017](https://eriqande.github.io/rep-res-eeb-2017/)) in reproducible research using R,
+RStudio, and GitHub to his colleagues at
+NMFS, and to students and affiliated researchers at the University of California, Santa Cruz. 
+
+You can get Eric's CV [here](https://eriqande.github.io/curriculum-vitae/eric_cv.pdf) in pdf.
 
 

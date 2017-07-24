@@ -1,6 +1,6 @@
 baseurl = "http://eriqande.netlify.com/"  # End your URL with a `/` trailing slash.
 title = "Eric C. Anderson"
-copyright = "&copy; 2016 Your Name"
+copyright = "website materials on <a href=\"https://github.com/eriqande/open-science-eric\">GitHub</a>. Deployed on <a href=\"https://www.netlify.com/\">Netlify</a>"
 theme = "hugo-academic"
 enableEmoji = true
 footnotereturnlinkcontents = "<sup>^</sup>"
