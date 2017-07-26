@@ -1,6 +1,6 @@
 baseurl = "http://eriqande.netlify.com/"  # End your URL with a `/` trailing slash.
 title = "Eric C. Anderson"
-copyright = "website materials on <a href=\"https://github.com/eriqande/open-science-eric\">GitHub</a>. Deployed on <a href=\"https://www.netlify.com/\">Netlify</a>"
+copyright = "<a href=\"https://github.com/rstudio/blogdown\">blogdown</a> website materials on <a href=\"https://github.com/eriqande/open-science-eric\">GitHub</a>. Deployed on <a href=\"https://www.netlify.com/\">Netlify</a>"
 theme = "hugo-academic"
 enableEmoji = true
 footnotereturnlinkcontents = "<sup>^</sup>"
@@ -168,10 +168,10 @@ defaultContentLanguageInSubdir = false
   url = "#posts"
   weight = 3
 
-[[menu.main]]
-  name = "Projects"
-  url = "#projects"
-  weight = 4
+#[[menu.main]]
+#  name = "Projects"
+#  url = "#projects"
+#  weight = 4
 
 [[menu.main]]
   name = "Teaching"

@@ -1,22 +1,22 @@
 +++
 # Date this page was created.
-date = "2017-01-27"
+date = "2017-07-24"
 
 # Project title.
-title = "Bird Genoscape"
+title = "Projects Under Construction"
 
 # Project summary to display on homepage.
-summary = "Mapping the flyways of America"
+summary = "Still working on inserting info about the boatload of projects we are cooking up..."
 
 # Optional image to display on homepage (relative to `static/img/` folder).
-image_preview = "bird_drawings.jpg"
+image_preview = "boards.jpg"
 
 # Tags: can be used for filtering projects.
 # Example: `tags = ["machine-learning", "deep-learning"]`
 tags = []
 
 # Optional external URL for project (replaces project detail page).
-external_link = "http://www.birdgenoscape.org/"
+external_link = ""
 
 # Does the project detail page use math formatting?
 math = false
