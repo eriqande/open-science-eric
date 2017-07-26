@@ -5,8 +5,6 @@ date = "2016-06-27"
 # Project title.
 title = "rubias"
 
-draft = true
-
 # Project summary to display on homepage.
 summary = "Computationally efficient genetic stock identification in the tidyverse."
 
