@@ -47,7 +47,8 @@ from GitHub. Winter 2016.
     - [PDF versions of the lecture notes for many years]  (https://github.com/eriqande/sisg_mcmc_course/tree/master/lectures/Final_PDFs) are available.
     - [C code for Eric's OpenGL-based visualizations](https://github.com/eriqande/sisg-mcmc-opengl-computer-demos).
     - [R-code Companions](http://eriqande.github.io/sisg_mcmc_course/): we have started putting together a number of
-    R notebooks that serve as R-code based implementaions to illustrate points from several sections in the lectures.  
+    R notebooks that serve as R-code based implementaions to illustrate points from several sections in the lectures. 
+    - [Matthew Stephens' 5-minute Statistics Page](http://stephens999.github.io/fiveMinuteStats/)
 
 
 
