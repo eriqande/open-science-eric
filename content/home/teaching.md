@@ -51,4 +51,9 @@ from GitHub. Winter 2016.
     - [Matthew Stephens' 5-minute Statistics Page](http://stephens999.github.io/fiveMinuteStats/)
 
 
+\\
+**Conservation Genomics Workshop, Flathead Lake Biological Station**
+
+- I gave two presentations here in 2017: 
+    - [Link to all notes and materials related to my presentations](https://eriqande.github.io/con-gen-2017/)
 
